@@ -21,15 +21,16 @@ handler.on('push', event => {
   if (repoName === 'NuxtBlog' && branch === "master") {
     // デプロイ処理や更新通知など (Twitter,Slack,etc...)
     exec('sh ./update_nuxtblog.sh', (err, stdout, stderr) => {
+      console.log(err, stdout, stderr)
       if(err) {
         notify({
           title: 'NuxtBlogデプロイ結果',
-          body: 'デプロイに失敗しました'
+          body: 'デプロイに失敗しました\n' + stderr
         })
       } else {
         notify({
           title: 'NuxtBlogデプロイ結果',
-          body: 'デプロイに成功しました'
+          body: 'デプロイに成功しました\n' + stdout
         })
       }
     })
