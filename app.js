@@ -1,6 +1,6 @@
 const http  =  require('http')
 const notify  = require('/home/conoha/manager/src/notification')
-const {exec}  =  require('child_process')
+const {spawn}  =  require('child_process')
 
 const createHandler = require('github-webhook-handler')
 const handler = createHandler({path: '/', secret: process.env.SECRET || 'test'})
@@ -20,17 +20,21 @@ handler.on('push', event => {
 
   if (repoName === 'NuxtBlog' && branch === "master") {
     // デプロイ処理や更新通知など (Twitter,Slack,etc...)
-    exec('sh ./update_nuxtblog.sh', (err, stdout, stderr) => {
-      console.log(err, stdout, stderr)
-      if(err) {
+    const deploy = spawn('sh', ['./update_nuxtblog.sh'], {shell: true})
+
+    deploy.stdout.on('data', data => console.log(data.toString()))
+    deploy.stderr.on('data', data => console.log(data.toString()))
+    
+    deploy.on('close', exit => {
+      if(exit != 0) {
         notify({
           title: 'NuxtBlogデプロイ結果',
-          body: 'デプロイに失敗しました\n' + stderr
+          body: 'デプロイに失敗しました'
         })
       } else {
         notify({
           title: 'NuxtBlogデプロイ結果',
-          body: 'デプロイに成功しました\n' + stdout
+          body: 'デプロイに成功しました'
         })
       }
     })
