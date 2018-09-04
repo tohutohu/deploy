@@ -1,36 +1,39 @@
 const http  =  require('http')
-const notify  = require('/home/conoha/manager/src/notification')
-const {spawn}  =  require('child_process')
+const {spawn, execSync}  =  require('child_process')
 
 const createHandler = require('github-webhook-handler')
 const handler = createHandler({path: '/', secret: process.env.SECRET || 'test'})
 
+const fs = require('fs')
+const path = require('path')
+
+const BASE_DIR = process.env.BASE_DIR
 
 const server = http.createServer((req, res) => {
-    res.end('Not found')
   handler(req, res, (req, res) => {
-    res.statusCode = 404
     res.end('Not found')
   })
 }).listen(7777)
 
 handler.on('push', event => {
-  const payload = event.payload;
-  const repoName = payload.repository.name;
-  const branch = payload.ref.split("/").pop();
+  const payload = event.payload
+  const repoName = payload.repository.name
+  const repoURL = payload.repository.url
+  const repoDir = BASE_DIR + '/' + repoName 
+  const branch = payload.ref.split("/").pop()
+  console.log('Deploy started ...')
+  console.log(repoDir)
 
-  if (repoName === 'blog' && branch === "master") {
-    // デプロイ処理や更新通知など (Twitter,Slack,etc...)
-    const deploy = spawn('sh', ['./update_nuxtblog.sh'], {shell: true})
+  if (branch === 'master') {
+    fs.mkdir(repoDir, err => {
+      if (!err) {
+        execSync('git clone ' + repoURL, {cwd: BASE_DIR, shell: '/bin/bash'})
+      }
 
-    deploy.stdout.on('data', data => console.log(data.toString()))
-    deploy.stderr.on('data', data => console.log(data.toString()))
-  }
-
-  if (repoName === 'bo' && branch === "master") {
-    const deploy = spawn('sh', ['./update_bo.sh'], {shell: true})
-
-    deploy.stdout.on('data', data => console.log(data.toString()))
-    deploy.stderr.on('data', data => console.log(data.toString()))
+      execSync('git fetch', {cwd: repoDir, shell: '/bin/bash'})
+      execSync('git reset --hard origin/master', {cwd: repoDir, shell: '/bin/bash'})
+      execSync('docker-compose down', {cwd: repoDir, shell: '/bin/bash'})
+      execSync('docker-compose up --build -d', {cwd: repoDir, shell: '/bin/bash'})
+    })
   }
 })
