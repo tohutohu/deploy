@@ -11,13 +11,37 @@ services:
       - /etc/nginx/vhost.d
       - /usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - network
     restart: always
   letsencrypt-nginx-proxy-companion:
     image: jrcs/letsencrypt-nginx-proxy-companion
     container_name: nginx-letsencrypt
+    networks:
+      - network
     volumes:
       - ./certs:/etc/nginx/certs
       - /var/run/docker.sock:/var/run/docker.sock:ro
     volumes_from:
       - nginx-proxy
     restart: always
+  deployer:
+    build: deployer
+    container_name: deployer
+    env_file: .env
+    networks:
+      - network
+    expose:
+      - "7777"
+    restart: always
+    environment:
+      VIRTUAL_HOST: deploy.to-hutohu.com
+      LETSENCRYPT_HOST: deploy.to-hutohu.com
+      LETSENCRYPT_EMAIL: tohu.soy@gmail.com
+    volumes:
+      - /srv:/srv
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/local/bin/doker
+networks:
+  network:
+    driver: bridge

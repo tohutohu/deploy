@@ -10,7 +10,7 @@ const path = require('path')
 const BASE_DIR = process.env.BASE_DIR
 
 const server = http.createServer((req, res) => {
-  handler(req, res, (req, res) => {
+  handler(req, res, err => {
     res.end('Not found')
   })
 }).listen(7777)
@@ -32,8 +32,8 @@ handler.on('push', event => {
 
       execSync('git fetch', {cwd: repoDir, shell: '/bin/bash'})
       execSync('git reset --hard origin/master', {cwd: repoDir, shell: '/bin/bash'})
-      execSync('docker-compose down', {cwd: repoDir, shell: '/bin/bash'})
-      execSync('docker-compose up --build -d', {cwd: repoDir, shell: '/bin/bash'})
+      fs.copyFileSync('./docker-compose.override.yml', repoDir + '/docker-compose.override.yml')
+      execSync(`docker-compose up --build -d`, {cwd: repoDir, shell: '/bin/bash'})
     })
   }
 })

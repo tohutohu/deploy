@@ -1,2 +1,5 @@
 node_modules
-update_nuxtblog.sh
+certs/*
+
+.env
+
